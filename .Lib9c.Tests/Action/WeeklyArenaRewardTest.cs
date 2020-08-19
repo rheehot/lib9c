@@ -5,6 +5,7 @@ namespace Lib9c.Tests.Action
     using System.Collections.Immutable;
     using Bencodex.Types;
     using Libplanet;
+    using Libplanet.Assets;
     using Libplanet.Crypto;
     using Nekoyume;
     using Nekoyume.Action;
@@ -50,7 +51,7 @@ namespace Lib9c.Tests.Action
             weekly.Set(avatar, _tableSheets.CharacterSheet);
             weekly.End();
 
-            var gold = new GoldCurrencyState(new Currency("NCG", minter: null));
+            var gold = new GoldCurrencyState(new Currency("NCG", 2, minter: null));
 
             var state = new State(ImmutableDictionary<Address, IValue>.Empty
                 .Add(default, weekly.Serialize())
@@ -58,12 +59,12 @@ namespace Lib9c.Tests.Action
                 .Add(avatarAddress, avatar.Serialize())
                 .Add(GoldCurrencyState.Address, gold.Serialize()));
 
-            state = (State)state.MintAsset(GoldCurrencyState.Address, state.GetGoldCurrency(), 1000);
+            state = (State)state.MintAsset(GoldCurrencyState.Address, state.GetGoldCurrency() * 1000);
             state.TryGetGoldBalance(agentAddress, out var agentBalance);
             state.TryGetGoldBalance(GoldCurrencyState.Address, out var arenaBalance);
 
-            Assert.Equal(1000, arenaBalance);
-            Assert.Equal(0, agentBalance);
+            Assert.Equal(gold.Currency * 1000, arenaBalance);
+            Assert.Equal(gold.Currency * 0, agentBalance);
 
             var action = new WeeklyArenaReward
             {
@@ -81,7 +82,7 @@ namespace Lib9c.Tests.Action
             var nextInfo = nextState.GetWeeklyArenaState(default(Address))[avatarAddress];
 
             Assert.True(nextInfo.Receive);
-            Assert.True(reward > 0);
+            Assert.True(reward > gold.Currency * 0);
         }
 
         [Fact]
